@@ -8,6 +8,7 @@ export default function Home() {
       <h1>🚀 Welcome to Our Hackathon Project</h1>
       <p>Built with Vite + React + Firebase</p>
       <button onClick={() => navigate("/login")}>Go to Login</button>
+      <button onClick={() => navigate("/map")}>Go to Map</button>
     </div>
   );
 }
