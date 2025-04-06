@@ -103,7 +103,7 @@ export default function Dashboard() {
           <span style={styles.logoText}>Housing47</span>
         </div>
         <div style={styles.navLinks}>
-          <button onClick={() => navigate("/dashboard")} style={styles.navLink}>Home</button>
+          <button style={{...styles.navLink, ...styles.activeNavLink}}>Dashboard</button>
           <button onClick={() => navigate("/map")} style={styles.navLink}>Browse Housing</button>
           <button onClick={() => navigate("/users")} style={styles.navLink}>Find Roommates</button>
           <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
@@ -285,6 +285,10 @@ const styles = {
     maxWidth: '1200px',
     margin: '0 auto',
     width: '100%',
+  },
+  activeNavLink: {
+    backgroundColor: '#EEF2FF',
+    color: '#4F46E5',
   },
   dashboardContainer: {
     display: 'flex',

@@ -11,20 +11,20 @@ const DormDetail = () => {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
   const imageRef = useRef(null);
-  
+
   // Room data states
   const [allRooms, setAllRooms] = useState([]);
   const [filteredRooms, setFilteredRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // Filter states
   const [filterCapacity, setFilterCapacity] = useState("");
   const [filterClassYear, setFilterClassYear] = useState("");
   const [filterAvailability, setFilterAvailability] = useState("available");
   const [filterAC, setFilterAC] = useState(""); // New AC filter
   const [filterEligibility, setFilterEligibility] = useState("all"); // New eligibility filter
-  
+
   // User data
   const [userId, setUserId] = useState(null);
   const [userClassYear, setUserClassYear] = useState(null);
@@ -91,7 +91,7 @@ const DormDetail = () => {
       { coords: "750,667,775,707", roomId: "HAR_189", info: "Room 189" },
     ]
   };
-  
+
   const image = dormImages[dormId];
   const mapData = dormMaps[dormId] || [];
 
@@ -105,10 +105,10 @@ const DormDetail = () => {
     if (room.is_taken) {
       return { eligible: false, reason: "taken" };
     }
-    
+
     const classYearMet = room.class_year <= userClassYear;
     const capacityMatched = room.capacity === groupSize;
-    
+
     if (classYearMet && capacityMatched) {
       return { eligible: true, reason: "eligible" };
     } else if (!classYearMet && capacityMatched) {
@@ -138,7 +138,7 @@ const DormDetail = () => {
     const fetchData = async () => {
       setLoading(true);
       setError("");
-      
+
       try {
         // Get userId from localStorage
         const storedUserId = localStorage.getItem("userId");
@@ -147,17 +147,17 @@ const DormDetail = () => {
           navigate("/signin");
           return;
         }
-        
+
         setUserId(storedUserId);
-        
+
         // Fetch user data to get class year and group info
         const userResponse = await axios.get(`http://localhost:5001/users/get_user/${storedUserId}`);
         const userData = userResponse.data;
-        setUserClassYear(typeof userData.class_year === 'string' ? 
-            parseInt(userData.class_year, 10) : 
-            userData.class_year);
+        setUserClassYear(typeof userData.class_year === 'string' ?
+          parseInt(userData.class_year, 10) :
+          userData.class_year);
         console.log("User class year:", userData.class_year);
-        
+
         // Fetch roommates to determine group size
         if (userData.group_id) {
           const roommatesResponse = await axios.get(`http://localhost:5001/users/roommates/${storedUserId}`);
@@ -168,16 +168,16 @@ const DormDetail = () => {
           setGroupSize(1); // Just the user if no roommates
           console.log("No roommates, group size set to 1");
         }
-        
+
         // Fetch all rooms
         const roomsResponse = await axios.get("http://localhost:5001/rooms");
         const roomsData = roomsResponse.data;
         console.log("Total rooms fetched:", roomsData.length);
-        
+
         // Filter rooms for this dorm only (assuming rooms have a dorm_id field)
         const dormRooms = roomsData.filter(room => room.building_id === "HARWOOD");
         console.log("Rooms for this dorm:", dormRooms.length);
-        
+
         // Set some rooms as taken for testing if needed
         const updatedRooms = dormRooms.map(room => {
           // Add is_taken flag for testing based on existing data
@@ -186,14 +186,14 @@ const DormDetail = () => {
           }
           return room;
         });
-        
+
         // Check for taken rooms
         const takenRooms = updatedRooms.filter(room => room.is_taken);
         console.log(`Found ${takenRooms.length} taken rooms in data`);
-        
+
         // Set the room data
         setAllRooms(updatedRooms);
-        
+
         // Try to get filtered rooms, but don't break if it fails
         try {
           const filteredRoomsResponse = await axios.get(`http://localhost:5001/rooms/filtered/${storedUserId}`);
@@ -207,7 +207,7 @@ const DormDetail = () => {
           console.log("Using available rooms as fallback:", availableRooms.length);
           setFilteredRooms(availableRooms);
         }
-        
+
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load room data. Please try again.");
@@ -215,64 +215,64 @@ const DormDetail = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [dormId, navigate]);
 
   // Apply manual filters on top of API filtered rooms
   useEffect(() => {
     if (allRooms.length === 0) return;
-    
+
     let filtered = [...allRooms];
-    
+
     // Filter by availability
     if (filterAvailability === "available") {
       filtered = filtered.filter(room => !room.is_taken);
     } else if (filterAvailability === "taken") {
       filtered = filtered.filter(room => room.is_taken);
     }
-    
+
     // Filter by capacity
     if (filterCapacity) {
       filtered = filtered.filter(room => room.capacity === parseInt(filterCapacity));
     }
-    
+
     // Filter by class year
     if (filterClassYear) {
       filtered = filtered.filter(room => room.class_year === parseInt(filterClassYear));
     }
-    
+
     // Filter by AC
     if (filterAC === "yes") {
       filtered = filtered.filter(room => room.has_ac === true);
     } else if (filterAC === "no") {
       filtered = filtered.filter(room => room.has_ac === false);
     }
-    
+
     // Filter by eligibility
     if (filterEligibility === "eligible") {
       filtered = filtered.filter(room => isRoomEligible(room));
     } else if (filterEligibility === "ineligible") {
       filtered = filtered.filter(room => !isRoomEligible(room) && !room.is_taken);
     }
-    
+
     setFilteredRooms(filtered);
   }, [filterAvailability, filterCapacity, filterClassYear, filterAC, filterEligibility, allRooms, groupSize, userClassYear]);
 
   // Create room overlay elements for the floorplan
   const renderRoomOverlays = () => {
-    
+
     // Don't try to render if we don't have room data yet
     if (allRooms.length === 0) {
       console.log("No room data available yet - skipping overlay rendering");
       return null;
     }
-    
+
     // Create overlays for all map areas
     return mapData.map((area, index) => {
       // Find the matching room from API data by matching room_number with roomId
       const roomInfo = allRooms.find(room => room.room_number === area.roomId);
-      
+
       if (!roomInfo) {
         console.log(`No room info found for area ${area.roomId}`);
         return null;
@@ -280,10 +280,10 @@ const DormDetail = () => {
 
       // Check the eligibility status
       const eligibilityStatus = getRoomEligibilityStatus(roomInfo);
-      
+
       // Parse coordinates from string like "228,424,163,372"
       const coordsArray = area.coords.split(',').map(Number);
-      
+
       // Get the values for the rectangle corners
       const x1 = parseInt(coordsArray[0]);
       const y1 = parseInt(coordsArray[1]);
@@ -295,10 +295,10 @@ const DormDetail = () => {
       const y = Math.min(y1, y2);
       const width = Math.abs(x2 - x1);
       const height = Math.abs(y2 - y1);
-      
+
       // Set color based on room eligibility
       let backgroundColor, borderColor;
-      
+
       if (roomInfo.is_taken) {
         // Red for taken
         backgroundColor = 'rgba(248, 113, 113, 0.6)';
@@ -312,10 +312,10 @@ const DormDetail = () => {
         backgroundColor = 'rgba(251, 191, 36, 0.6)';
         borderColor = 'rgba(217, 119, 6, 0.8)';
       }
-      
+
       // Create the overlay div
       return (
-        <div 
+        <div
           key={area.roomId}
           style={{
             position: 'absolute',
@@ -338,7 +338,7 @@ const DormDetail = () => {
     setTooltipInfo(info);
     setShowTooltip(true);
     updateTooltipPosition(e);
-    
+
     // Only fetch detailed room info if we have a room ID
     if (roomId) {
       await fetchRoomDetails(roomId);
@@ -370,40 +370,38 @@ const DormDetail = () => {
     try {
       console.log("Starting room selection for roomId:", roomId);
       console.log("Current userId:", userId);
-      
+
       // Get the room information
       const room = allRooms.find(r => r.id === roomId);
-      
+
       // Check eligibility first
       if (room) {
         const eligibilityStatus = getRoomEligibilityStatus(room);
-        
+
         if (!eligibilityStatus.eligible) {
           // Display appropriate error message based on reason
           if (eligibilityStatus.reason === "class_year") {
-            alert(`This room is only available for ${
-              room.class_year === 1 ? 'Freshman' : 
-              room.class_year === 2 ? 'Sophomore' :
-              room.class_year === 3 ? 'Junior' : 'Senior'} and above.`);
+            alert(`This room is only available for ${room.class_year === 1 ? 'Freshman' :
+                room.class_year === 2 ? 'Sophomore' :
+                  room.class_year === 3 ? 'Junior' : 'Senior'} and above.`);
             return;
           } else if (eligibilityStatus.reason === "capacity") {
             alert(`This room is for ${room.capacity} people, but your group size is ${groupSize}.`);
             return;
           } else if (eligibilityStatus.reason === "both") {
-            alert(`This room is not eligible for your group. It requires ${
-              room.class_year === 1 ? 'Freshman' : 
-              room.class_year === 2 ? 'Sophomore' :
-              room.class_year === 3 ? 'Junior' : 'Senior'} or above and a group size of ${room.capacity}.`);
+            alert(`This room is not eligible for your group. It requires ${room.class_year === 1 ? 'Freshman' :
+                room.class_year === 2 ? 'Sophomore' :
+                  room.class_year === 3 ? 'Junior' : 'Senior'} or above and a group size of ${room.capacity}.`);
             return;
           }
         }
       }
-      
+
       // Check if the user already has a room assigned
       const userResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
       const userData = userResponse.data;
       console.log("User data received:", userData);
-      
+
       if (userData.room_id) {
         console.log("User already has room assigned:", userData.room_id);
         // Confirm with user that they want to change rooms
@@ -411,7 +409,7 @@ const DormDetail = () => {
           console.log("User cancelled room change");
           return;
         }
-        
+
         // Unselect the current room first
         console.log("Unselecting current room...");
         const unselectResponse = await axios.post("http://localhost:5001/rooms/unselectRoom", {
@@ -420,7 +418,7 @@ const DormDetail = () => {
         });
         console.log("Room unselection response:", unselectResponse.data);
       }
-      
+
       // Select the new room
       console.log("Selecting new room...");
       const selectResponse = await axios.post("http://localhost:5001/rooms/selectRoom", {
@@ -428,24 +426,24 @@ const DormDetail = () => {
         user_id: userId
       });
       console.log("Room selection response:", selectResponse.data);
-      
+
       // Refresh the room data
       console.log("Refreshing room data...");
       const roomsResponse = await axios.get("http://localhost:5001/rooms");
       const roomsData = roomsResponse.data;
       console.log("Room data received:", roomsData.length, "rooms");
-      
+
       const dormRooms = roomsData.filter(room => room.building_id === "HARWOOD");
       console.log("Filtered room data for current dorm:", dormRooms.length, "rooms");
-      
+
       setAllRooms(dormRooms);
-      
+
       // Show success message
       alert("Room selected successfully!");
-      
+
     } catch (error) {
       console.error("Error selecting room:", error);
-      
+
       // Enhanced error reporting
       if (error.response) {
         // The request was made and the server responded with a status code
@@ -490,17 +488,15 @@ const DormDetail = () => {
   // Get eligibility reason text
   const getEligibilityReasonText = (eligibilityStatus, room) => {
     if (eligibilityStatus.reason === "class_year") {
-      return `Requires ${
-        room.class_year === 1 ? 'Freshman' : 
-        room.class_year === 2 ? 'Sophomore' :
-        room.class_year === 3 ? 'Junior' : 'Senior'} or above`;
+      return `Requires ${room.class_year === 1 ? 'Freshman' :
+          room.class_year === 2 ? 'Sophomore' :
+            room.class_year === 3 ? 'Junior' : 'Senior'} or above`;
     } else if (eligibilityStatus.reason === "capacity") {
       return `For ${room.capacity} people (your group: ${groupSize})`;
     } else if (eligibilityStatus.reason === "both") {
-      return `Requires ${
-        room.class_year === 1 ? 'Freshman' : 
-        room.class_year === 2 ? 'Sophomore' :
-        room.class_year === 3 ? 'Junior' : 'Senior'} or above and ${room.capacity} people`;
+      return `Requires ${room.class_year === 1 ? 'Freshman' :
+          room.class_year === 2 ? 'Sophomore' :
+            room.class_year === 3 ? 'Junior' : 'Senior'} or above and ${room.capacity} people`;
     }
     return "";
   };
@@ -508,14 +504,14 @@ const DormDetail = () => {
   // Get total counts for different room categories
   const countEligibleRooms = () => {
     if (allRooms.length === 0) return { eligible: 0, ineligible: 0, taken: 0 };
-    
+
     const eligible = allRooms.filter(room => isRoomEligible(room)).length;
     const ineligible = allRooms.filter(room => !room.is_taken && !isRoomEligible(room)).length;
     const taken = allRooms.filter(room => room.is_taken).length;
-    
+
     return { eligible, ineligible, taken };
   };
-  
+
   const roomCounts = countEligibleRooms();
 
   return (
@@ -526,14 +522,14 @@ const DormDetail = () => {
           <span style={styles.logoText}>Housing47</span>
         </div>
         <div style={styles.navLinks}>
-          <button style={styles.navLink} onClick={() => navigate("/dashboard")}>Dashboard</button>
-          <button style={styles.navLink} onClick={() => navigate("/dorms")}>Browse Housing</button>
-          <button style={styles.navLink} onClick={() => navigate("/group")}>My Group</button>
-          <button 
+          <button onClick={() => navigate("/dashboard")} style={styles.navLink}>Home</button>
+          <button onClick={() => navigate("/map")} style={styles.navLink}>Browse Housing</button>
+          <button onClick={() => navigate("/users")} style={styles.navLink}>Find Roommates</button>
+          <button
             onClick={() => {
               localStorage.removeItem("userId");
               navigate("/");
-            }} 
+            }}
             style={styles.signOutButton}
           >
             Sign Out
@@ -545,7 +541,7 @@ const DormDetail = () => {
         {/* Left Side Filters */}
         <div style={styles.leftSidebar}>
           <div style={styles.sidebarHeader}>
-            <button 
+            <button
               onClick={handleBackToMap}
               style={styles.backButton}
             >
@@ -554,17 +550,17 @@ const DormDetail = () => {
             <h1 style={styles.dormTitle}>{dormId.replace(/-/g, " ").toUpperCase()}</h1>
             <p style={styles.dormSubtitle}>Interactive Floor Plan</p>
           </div>
-          
+
           <div style={styles.filterSection}>
             <h2 style={styles.filterTitle}>Filter Rooms</h2>
-            
+
             {/* User info and eligibility explanation */}
             <div style={styles.userInfoPanel}>
               <div style={styles.eligibilityNote}>
                 <p>Eligible rooms must match your group size and be available for your class year or lower.</p>
               </div>
             </div>
-            
+
             {/* Room Counts */}
             <div style={styles.roomCountsContainer}>
               <div style={styles.roomCountItem}>
@@ -580,11 +576,11 @@ const DormDetail = () => {
                 <span>{roomCounts.taken} taken</span>
               </div>
             </div>
-            
+
             {/* Filter by Eligibility */}
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Room Eligibility</label>
-              <select 
+              <select
                 style={styles.filterSelect}
                 value={filterEligibility}
                 onChange={(e) => setFilterEligibility(e.target.value)}
@@ -594,11 +590,11 @@ const DormDetail = () => {
                 <option value="ineligible">Ineligible Rooms Only</option>
               </select>
             </div>
-            
+
             {/* Filter by Availability */}
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Availability</label>
-              <select 
+              <select
                 style={styles.filterSelect}
                 value={filterAvailability}
                 onChange={(e) => setFilterAvailability(e.target.value)}
@@ -608,11 +604,11 @@ const DormDetail = () => {
                 <option value="taken">Taken Only</option>
               </select>
             </div>
-            
+
             {/* Filter by AC */}
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Air Conditioning</label>
-              <select 
+              <select
                 style={styles.filterSelect}
                 value={filterAC}
                 onChange={(e) => setFilterAC(e.target.value)}
@@ -622,11 +618,11 @@ const DormDetail = () => {
                 <option value="no">Without AC</option>
               </select>
             </div>
-            
+
             {/* Filter by Capacity */}
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Room Capacity</label>
-              <select 
+              <select
                 style={styles.filterSelect}
                 value={filterCapacity}
                 onChange={(e) => setFilterCapacity(e.target.value)}
@@ -639,11 +635,11 @@ const DormDetail = () => {
                 ))}
               </select>
             </div>
-            
+
             {/* Filter by Class Year */}
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Class Year Eligibility</label>
-              <select 
+              <select
                 style={styles.filterSelect}
                 value={filterClassYear}
                 onChange={(e) => setFilterClassYear(e.target.value)}
@@ -651,35 +647,35 @@ const DormDetail = () => {
                 <option value="">All Class Years</option>
                 {uniqueClassYears.map(year => (
                   <option key={year} value={year}>
-                    {year === 1 ? 'Freshman' : 
-                     year === 2 ? 'Sophomore' :
-                     year === 3 ? 'Junior' : 'Senior'}
+                    {year === 1 ? 'Freshman' :
+                      year === 2 ? 'Sophomore' :
+                        year === 3 ? 'Junior' : 'Senior'}
                   </option>
                 ))}
               </select>
             </div>
-            
+
             <div style={styles.filterInfo}>
               <p>Your group size: <strong>{groupSize}</strong></p>
               <p>Your class year: <strong>
-                {userClassYear === 1 ? 'Freshman' : 
-                 userClassYear === 2 ? 'Sophomore' :
-                 userClassYear === 3 ? 'Junior' :
-                 userClassYear === 4 ? 'Senior' : 'Unknown'}
+                {userClassYear === 1 ? 'Freshman' :
+                  userClassYear === 2 ? 'Sophomore' :
+                    userClassYear === 3 ? 'Junior' :
+                      userClassYear === 4 ? 'Senior' : 'Unknown'}
               </strong></p>
             </div>
-            
+
             <button style={styles.resetButton} onClick={resetFilters}>
               Reset Filters
             </button>
           </div>
-          
+
           {/* Filtered Room List */}
           <div style={styles.roomListSection}>
             <h2 style={styles.roomListTitle}>
               Available Rooms {filteredRooms.length > 0 ? `(${filteredRooms.length})` : ''}
             </h2>
-            
+
             {loading ? (
               <div style={styles.loadingContainer}>
                 <div style={styles.loadingSpinner}></div>
@@ -693,8 +689,8 @@ const DormDetail = () => {
               <div style={styles.roomListWrapper}>
                 <div style={styles.roomList}>
                   {filteredRooms.map((room) => (
-                    <div 
-                      key={room.id} 
+                    <div
+                      key={room.id}
                       style={{
                         ...styles.roomListItem,
                         ...(room.is_taken ? styles.roomTaken : {})
@@ -706,9 +702,9 @@ const DormDetail = () => {
                         <span>{room.capacity} {room.capacity === 1 ? 'person' : 'people'}</span>
                         <span> • </span>
                         <span>{
-                          room.class_year === 1 ? 'Freshman' : 
-                          room.class_year === 2 ? 'Sophomore' :
-                          room.class_year === 3 ? 'Junior' : 'Senior'}
+                          room.class_year === 1 ? 'Freshman' :
+                            room.class_year === 2 ? 'Sophomore' :
+                              room.class_year === 3 ? 'Junior' : 'Senior'}
                         </span>
                         {room.has_ac && <span> • <span style={styles.acBadge}>AC</span></span>}
                       </div>
@@ -728,7 +724,7 @@ const DormDetail = () => {
             )}
           </div>
         </div>
-        
+
         {/* Right Side Image */}
         <div style={styles.rightContent}>
           {image ? (
@@ -740,7 +736,7 @@ const DormDetail = () => {
                 useMap={`#${dormId}-map`}
                 style={styles.mapImage}
               />
-              
+
               {/* Room Overlays - Highlight taken rooms in green, available in red */}
               <div style={{
                 position: 'absolute',
@@ -753,7 +749,7 @@ const DormDetail = () => {
               }}>
                 {renderRoomOverlays()}
               </div>
-              
+
               {/* Enhanced Tooltip */}
               {showTooltip && (
                 <div style={{
@@ -769,17 +765,17 @@ const DormDetail = () => {
                       <div style={styles.tooltipDetails}>
                         <p>Capacity: {tooltipRoom.capacity} {tooltipRoom.capacity === 1 ? 'person' : 'people'}</p>
                         <p>Status: {
-                          tooltipRoom.is_taken ? 
-                          <span style={{color: '#ef4444', fontWeight: 'bold'}}>Taken</span> : 
-                          <span style={{color: '#22c55e', fontWeight: 'bold'}}>Available</span>
+                          tooltipRoom.is_taken ?
+                            <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Taken</span> :
+                            <span style={{ color: '#22c55e', fontWeight: 'bold' }}>Available</span>
                         }</p>
                         <p>Class Year: {
-                          tooltipRoom.class_year === 1 ? 'Freshman' : 
-                          tooltipRoom.class_year === 2 ? 'Sophomore' :
-                          tooltipRoom.class_year === 3 ? 'Junior' : 'Senior'
+                          tooltipRoom.class_year === 1 ? 'Freshman' :
+                            tooltipRoom.class_year === 2 ? 'Sophomore' :
+                              tooltipRoom.class_year === 3 ? 'Junior' : 'Senior'
                         }</p>
                         {tooltipRoom.time_taken && (
-                        <p>Previously taken: {formatTimestamp(tooltipRoom.time_taken)}</p>)}
+                          <p>Previously taken: {formatTimestamp(tooltipRoom.time_taken)}</p>)}
                         {tooltipRoom.dimensions && <p>Size: {tooltipRoom.dimensions}</p>}
                         {tooltipRoom.has_ac && <p>Air Conditioning: Yes</p>}
                         {tooltipRoom.dimensions && <p>Size: {tooltipRoom.dimensions}</p>}
@@ -793,16 +789,16 @@ const DormDetail = () => {
                   )}
                 </div>
               )}
-              
+
               {/* Image Map */}
               <map name={`${dormId}-map`}>
                 {mapData.map((area, index) => {
                   // Find the actual room data for this map area
                   const roomInfo = allRooms.find(r => r.room_number === area.roomId);
-                  const displayInfo = roomInfo ? 
-                    `Room ${roomInfo.room_number} - ${roomInfo.capacity} person${roomInfo.capacity !== 1 ? 's' : ''} - ${roomInfo.is_taken ? 'Taken' : 'Available'}${roomInfo.has_ac ? ' - Has AC' : ''}` : 
+                  const displayInfo = roomInfo ?
+                    `Room ${roomInfo.room_number} - ${roomInfo.capacity} person${roomInfo.capacity !== 1 ? 's' : ''} - ${roomInfo.is_taken ? 'Taken' : 'Available'}${roomInfo.has_ac ? ' - Has AC' : ''}` :
                     area.info;
-                  
+
                   return (
                     <area
                       key={index}
@@ -826,7 +822,7 @@ const DormDetail = () => {
           )}
         </div>
       </main>
-      
+
       <footer style={styles.footer}>
         <p>&copy; 2025 Housing47. All rights reserved.</p>
       </footer>

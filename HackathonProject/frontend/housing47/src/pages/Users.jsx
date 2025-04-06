@@ -46,43 +46,43 @@ export default function Users() {
     }, [navigate]);
 
     const handleAddToGroup = async (roommateId) => {
-      try {
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-          navigate("/signin");
-          return;
-        }
+        try {
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                navigate("/signin");
+                return;
+            }
 
-        const response = await axios.post("http://localhost:5001/users/addToGroup", {
-          currId: userId,
-          roommateId: roommateId
-        });
+            const response = await axios.post("http://localhost:5001/users/addToGroup", {
+                currId: userId,
+                roommateId: roommateId
+            });
 
-        if (response.status === 200) {
-          // Update state to reflect the changes
-          setGroupId(response.data.group_id);
-          
-          // Refresh the user data
-          const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
-          setUserData(updatedResponse.data);
-          
-          // Update the available users list
-          const updatedUsersResponse = await axios.get('http://localhost:5001/users');
-          setAllUsers(updatedUsersResponse.data);
-          
-          // Filter out users who now have a group
-          const filteredUsers = updatedUsersResponse.data.filter(user => 
-            !user.group_id && user.id !== userId
-          );
-          setAvailableUsers(filteredUsers);
-          
-          // Show success message
-          toast.success("Successfully added to group!");
+            if (response.status === 200) {
+                // Update state to reflect the changes
+                setGroupId(response.data.group_id);
+
+                // Refresh the user data
+                const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
+                setUserData(updatedResponse.data);
+
+                // Update the available users list
+                const updatedUsersResponse = await axios.get('http://localhost:5001/users');
+                setAllUsers(updatedUsersResponse.data);
+
+                // Filter out users who now have a group
+                const filteredUsers = updatedUsersResponse.data.filter(user =>
+                    !user.group_id && user.id !== userId
+                );
+                setAvailableUsers(filteredUsers);
+
+                // Show success message
+                toast.success("Successfully added to group!");
+            }
+        } catch (err) {
+            console.error("Error adding user to group:", err);
+            setError("Failed to add user to your group. Please try again.");
         }
-      } catch (err) {
-        console.error("Error adding user to group:", err);
-        setError("Failed to add user to your group. Please try again.");
-      }
     };
 
     const handleSignOut = () => {
@@ -93,30 +93,30 @@ export default function Users() {
     };
 
     const handleLeaveGroup = async () => {
-      try {
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-          navigate("/signin");
-          return;
-        }
+        try {
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                navigate("/signin");
+                return;
+            }
 
-        const response = await axios.post(`http://localhost:5001/users/leaveGroup/${userId}`);
+            const response = await axios.post(`http://localhost:5001/users/leaveGroup/${userId}`);
 
-        if (response.status === 200) {
-          // Update state to reflect the changes
-          setGroupId(null);
-          
-          // Refresh user data
-          const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
-          setUserData(updatedResponse.data);
-          
-          // Show success message
-          toast("Successfully left the group!");
+            if (response.status === 200) {
+                // Update state to reflect the changes
+                setGroupId(null);
+
+                // Refresh user data
+                const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
+                setUserData(updatedResponse.data);
+
+                // Show success message
+                toast("Successfully left the group!");
+            }
+        } catch (err) {
+            console.error("Error leaving group:", err);
+            setError("Failed to leave the group. Please try again.");
         }
-      } catch (err) {
-        console.error("Error leaving group:", err);
-        setError("Failed to leave the group. Please try again.");
-      }
     };
 
 
@@ -131,8 +131,8 @@ export default function Users() {
     }
 
     // Get current roommates if in a group
-    const roommates = allUsers.filter(user => 
-      user.group_id === groupId && user.id !== localStorage.getItem("userId")
+    const roommates = allUsers.filter(user =>
+        user.group_id === groupId && user.id !== localStorage.getItem("userId")
     );
 
     return (
@@ -143,9 +143,9 @@ export default function Users() {
                     <span style={styles.logoText}>Housing47</span>
                 </div>
                 <div style={styles.navLinks}>
-                    <button style={styles.navLink} onClick={() => navigate('/dashboard')}>Dashboard</button>
-                    <button style={styles.navLink} onClick={() => navigate('/map')}>Browse Housing</button>
-                    <button style={styles.navLink} onClick={() => navigate('/users')}>Find Roommates</button>
+                    <button onClick={() => navigate("/dashboard")} style={styles.navLink}>Dashboard</button>
+                    <button onClick={() => navigate("/map")} style={styles.navLink}>Browse Housing</button>
+                    <button style={{...styles.navLink, ...styles.activeNavLink}}>Find Roommates</button>
                     <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
                 </div>
             </header>
@@ -177,8 +177,8 @@ export default function Users() {
                                     ) : (
                                         <p>No roommates yet. Add some below!</p>
                                     )}
-                                    <button 
-                                        style={{...styles.actionButton, backgroundColor: '#EF4444'}} 
+                                    <button
+                                        style={{ ...styles.actionButton, backgroundColor: '#EF4444' }}
                                         onClick={handleLeaveGroup}
                                     >
                                         Leave Group
@@ -206,8 +206,8 @@ export default function Users() {
                                         <h3 style={styles.userName}>{user.username}</h3>
                                         <p>Email: {user.email}</p>
                                         <p>Class Year: {getClassYearName(user.class_year)}</p>
-                                        <button 
-                                            style={styles.actionButton} 
+                                        <button
+                                            style={styles.actionButton}
                                             onClick={() => handleAddToGroup(user.id)}
                                         >
                                             Add to My Group
@@ -369,6 +369,10 @@ const styles = {
         transition: 'background-color 0.2s',
         marginTop: '1rem',
     },
+    activeNavLink: {
+        backgroundColor: '#EEF2FF',
+        color: '#4F46E5',
+      },
     footer: {
         borderTop: '1px solid #E5E7EB',
         padding: '1.5rem',

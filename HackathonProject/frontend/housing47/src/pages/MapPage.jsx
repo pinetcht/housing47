@@ -98,7 +98,7 @@ const Map = () => {
         <div style={styles.navLinks}>
           <button style={styles.navLink} onClick={() => navigate("/dashboard")}>Dashboard</button>
           <button style={{...styles.navLink, ...styles.activeNavLink}}>Browse Housing</button>
-          <button style={styles.navLink} onClick={() => navigate("/group")}>My Group</button>
+          <button onClick={() => navigate("/users")} style={styles.navLink}>Find Roommates</button>
           <button 
             onClick={handleSignOut} 
             style={styles.signOutButton}

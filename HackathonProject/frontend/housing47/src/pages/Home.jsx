@@ -28,7 +28,6 @@ export default function Home() {
           >
             About
           </button>
-          <button style={styles.navLink}>FAQ</button>
           <button 
             onClick={handleLoginClick}
             style={styles.loginButton}
