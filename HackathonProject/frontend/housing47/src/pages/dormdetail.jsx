@@ -36,7 +36,11 @@ const DormDetail = () => {
     "mudd-blaisdell-hall": "/images/mudd-blaisdell-hall.jpg",
     // Add all your dorms here
   };
-
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp || !timestamp.seconds) return "N/A";
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toLocaleString(); // you can customize format if needed
+  };
   // Define image maps for each dorm
   const dormMaps = {
     "harwood-court": [
@@ -774,6 +778,9 @@ const DormDetail = () => {
                           tooltipRoom.class_year === 2 ? 'Sophomore' :
                           tooltipRoom.class_year === 3 ? 'Junior' : 'Senior'
                         }</p>
+                        {tooltipRoom.time_taken && (
+                        <p>Previously taken: {formatTimestamp(tooltipRoom.time_taken)}</p>)}
+                        {tooltipRoom.dimensions && <p>Size: {tooltipRoom.dimensions}</p>}
                         {tooltipRoom.has_ac && <p>Air Conditioning: Yes</p>}
                         {tooltipRoom.dimensions && <p>Size: {tooltipRoom.dimensions}</p>}
                         {tooltipRoom.features && tooltipRoom.features.length > 0 && (
