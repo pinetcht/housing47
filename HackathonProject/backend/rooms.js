@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from "./firebase.js";
 import { getRoommatesByUserId, getUserById } from "./users.js";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, getDoc, setDoc, doc } from "firebase/firestore";
 
 const router = express.Router();
 
@@ -52,17 +52,6 @@ export async function filterRooms(user_id) {
 
     console.log("rooms ", rooms);
 
-    // let filteredRooms = [];
-    // rooms.forEach((room) => {
-    //     if(!room.is_taken && room.capacity == numMembers && room.class_year == classYear){
-    //         filteredRooms.push({
-    //             id: room.id,
-    //             ...room
-    //         })
-    //     }
-
-    // });
-
     const filteredRooms = rooms.filter(room =>
         !room.is_taken &&
         room.capacity === numMembers &&
@@ -79,6 +68,100 @@ router.get("/filtered/:id", async (req, res) => {
         res.status(200).json(filteredRooms)
     } catch (e) {
         res.status(400).json({ error: `Error fetching filtered data ${e}` })
+    }
+})
+
+// helper function to get all dorms
+export async function getRoomById(roomId) {
+    const docRef = doc(db, "rooms", roomId);
+        
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+       return docSnap.data();
+        
+    } else {
+        throw new Error("Room not found");
+    }
+}
+
+router.get("/get_room/:id", async (req, res) => {
+    try {
+        const room = await getRoomById(req.params.id);
+        res.status(200).json(room)
+    } catch (e) {
+        res.status(400).json({ error: `Error fetching room data ${e}` })
+    }
+})
+
+router.post("/selectRoom", async (req, res) => {
+    const { room_id, user_id } = req.body;
+
+    try {
+        const room = await getRoomById(room_id);
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+
+        const user = await getUserById(user_id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+
+        const assigned_group_id = user.group_id;
+        await Promise.all([
+            // Update current room with group_id
+            setDoc(doc(db, "rooms", room_id), { assigned_group_id, is_taken: true  }, { merge: true }),
+        ]);
+
+        const userGroup = await getRoommatesByUserId(user_id);
+
+        await Promise.all(
+            userGroup.map((user) =>
+                setDoc(doc(db, "users", user.id), { room_id: room_id }, { merge: true })
+            )
+        );
+
+        res.status(200).json("Successfully selected rooms");
+    
+        
+    } catch (e) {
+        res.status(400).json({ error: `Error selecting room ${e}` })
+    }
+})
+
+router.post("/unselectRoom", async (req, res) => {
+    const { room_id, user_id } = req.body;
+
+    try {
+        const room = await getRoomById(room_id);
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
+
+        const user = await getUserById(user_id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+
+        await Promise.all([
+            // Reset group_id to null and is_taken to false
+            setDoc(doc(db, "rooms", room_id), { assigned_group_id: null, is_taken: false  }, { merge: true }),
+        ]);
+
+        const userGroup = await getRoommatesByUserId(user_id);
+        await Promise.all(
+            userGroup.map((user) =>
+                setDoc(doc(db, "users", user.id), { room_id: null }, { merge: true })
+            )
+        );
+
+        res.status(200).json("Successfully unselected rooms");
+    
+        
+    } catch (e) {
+        res.status(400).json({ error: `Error unselecting room ${e}` })
     }
 })
 
