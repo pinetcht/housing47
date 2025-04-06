@@ -1,5 +1,6 @@
 {
   "name": "5c-hackathon-2025",
+  "type": "module",
   "version": "1.0.0",
   "description": "Welcome to our 2025 Hackathon project",
   "main": "index.js",
@@ -20,8 +21,10 @@
   "homepage": "https://github.com/dmwong25/5C-Hackathon-2025#readme",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "firebase": "^11.6.0",
+    "firebase-admin": "^13.2.0",
     "nodemon": "^3.1.9"
   }
 }
