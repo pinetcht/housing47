@@ -161,6 +161,7 @@ const DormDetail = () => {
         // Fetch roommates to determine group size
         if (userData.group_id) {
           const roommatesResponse = await axios.get(`http://localhost:5001/users/roommates/${storedUserId}`);
+          console.log("Roommates response:", roommatesResponse.data);
           setGroupSize(roommatesResponse.data.roommates.length);
           console.log("Group size:", roommatesResponse.data.roommates.length);
         } else {
