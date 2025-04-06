@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from "./firebase.js";
 import { getDorms } from "./dorms.js";
+import { filterRooms } from "./rooms.js";
 import { collection, getDocs, updateDoc, doc, setDoc, addDoc, deleteDoc, getDoc, where, query} from "firebase/firestore";
 
 const router = express.Router();
@@ -10,8 +11,7 @@ router.get("/", async (req, res) => {
     try {
         let ret = [];
         const docRef = await getDocs(collection(db, "users"));
-       
-
+    
         docRef.forEach((doc) => {
             ret.push({
                 id: doc.id,
@@ -35,6 +35,8 @@ router.post("/create", async (req, res) =>{
     try {
         const userData = {
             class_year: class_year,
+            group_id: null,
+            room_id: null,
             email: email,
             password: password,
             username: username
@@ -78,50 +80,42 @@ router.get("/:id", async (req, res) => {
     }
 })
 
-// get current user's roommates
+
+export async function getRoommatesByUserId(userId) {
+    const user = await getUserById(userId);
+  
+    if (!user || !user.group_id) {
+      throw new Error("User not found or not in a group");
+    }
+  
+    const q = query(collection(db, "users"), where("group_id", "==", user.group_id));
+    const querySnap = await getDocs(q);
+  
+    const usersInGroup = [];
+    querySnap.forEach((doc) => {
+      usersInGroup.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+  
+    return usersInGroup;
+  }
+
+
 router.get("/roommates/:id", async (req, res) => {
-
-    let group_id = null;
-
-    // get user info
     try {
-        const user = await getUserById(req.params.id);
-        if (user) {
-            group_id = user.group_id;
-        } else {
-            console.log("User does not exist");
-        }
-    } catch (e) {
-        res.status(400).json({error: `Error fetching user data ${e}`})
+      const roommates = await getRoommatesByUserId(req.params.id);
+  
+      res.status(200).json({
+        message: "Fetched roommates successfully",
+        roommates: roommates
+      });
+    } catch (error) {
+      console.error("Error fetching roommates:", error);
+      res.status(400).json({ error: error.message });
     }
-
-    // get roommates + current user
-    try {
-        const q = query(collection(db, "users"), where("group_id", "==", group_id))
-        
-        const querySnap = await getDocs(q);
-
-        if (querySnap) {
-            const usersInGroup = [];
-
-            querySnap.forEach((doc) => {
-                usersInGroup.push({
-                    id: doc.id,
-                    ...doc.data()
-                    });
-                });
-
-                res.status(200).json({
-                    message: 'Fetched roommates successfully',
-                    roommates: usersInGroup
-                });
-        } else {
-            console.log("User does not exist");
-        }
-    } catch (e) {
-        res.status(400).json({error: `Error fetching user data ${e}`})
-    }
-})
+  });
 
 
 
@@ -193,45 +187,6 @@ router.post("/leaveGroup/:id", async(req, res) => {
 router.post("/selectRoom", async (req, res) => {
     const { currId, roommateId } = req.body;
   
-    try {
-      // 1. Get current user
-      const currUser = await getUserById(currId);
-      if (!currUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      const roommate = await getUserById(roommateId);
-      if (!roommate) {
-        return res.status(404).json({ error: "Roommate not found" });
-      }
-
-      let group_id = currUser.group_id;
-      let class_year = Math.max(currUser.class_year, roommate.class_year);
-      let room_id = null;
-  
-      // 2. If current user has no group, create one and assign
-      if (!group_id) {
-        group_id = Math.random().toString(36).substring(2, 10);
-  
-        await Promise.all([
-          // Create a new group doc
-          addDoc(collection(db, "roommate_groups"), { group_id }),
-  
-          // Update current user with group_id
-          setDoc(doc(db, "users", currId), { group_id, room_id }, { merge: true }),
-        ]);
-      }
-  
-      // 3. Add roommate to the group + change class year to curr user's class year
-      // this assumes that the roommate doesn't already have a group
-      await setDoc(doc(db, "users", roommateId), { group_id, class_year, room_id }, { merge: true });
-  
-      // 4. Respond success
-      return res.status(200).json({ message: "Successfully added to group", group_id });
-    } catch (error) {
-      console.error("Error in /addToGroup:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
   });
   
 

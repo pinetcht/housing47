@@ -1,22 +1,24 @@
 import express from 'express';
 import { db } from "./firebase.js";
+import { getUserById } from "./users.js";
+import { getRooms } from "./rooms.js";
 import { collection, getDocs, updateDoc, doc, setDoc, addDoc, deleteDoc, getDoc } from "firebase/firestore";
 
 const router = express.Router();
 
 
-// helper function to get user profile data
+// helper function to get all dorms
 export async function getDorms() {
     let ret = [];
     const docRef = await getDocs(collection(db, "dorms"));
-   
-    if (docRef){
+
+    if (docRef) {
         docRef.forEach((doc) => {
             ret.push({
                 id: doc.id,
                 ...doc.data()
             })
-        }) 
+        })
 
         return ret;
     } else {
@@ -27,11 +29,12 @@ export async function getDorms() {
 router.get("/", async (req, res) => {
     try {
         const dorms = await getDorms();
-
         res.status(200).json(dorms)
-    } catch(e) {
-        res.status(400).json({error: `Error fetching dorms data ${e}`})
+    } catch (e) {
+        res.status(400).json({ error: `Error fetching dorms data ${e}` })
     }
 })
+
+
 
 export default router;
