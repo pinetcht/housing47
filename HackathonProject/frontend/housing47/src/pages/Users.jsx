@@ -9,8 +9,8 @@ export default function Users() {
     const [groupId, setGroupId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [allUsers, setAllUsers] = useState([]);
     const [availableUsers, setAvailableUsers] = useState([]);
-
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -24,14 +24,20 @@ export default function Users() {
           try {
             setLoading(true);
     
-            // Get current user
-            const response = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
+            // Get current user - using the correct API endpoint from the router
+            const response = await axios.get(`http://localhost:5001/users/${userId}`);
             setUserData(response.data);
             setGroupId(response.data.group_id);
     
-            // Get available users
-            const availableResponse = await axios.get(`http://localhost:5001/users/available`);
-            setAvailableUsers(availableResponse.data);
+            // Get all users - this is what your API actually supports
+            const usersResponse = await axios.get('http://localhost:5001/users');
+            setAllUsers(usersResponse.data);
+            
+            // Filter out users who already have a group and the current user
+            const filteredUsers = usersResponse.data.filter(user => 
+              !user.group_id && user.id !== userId
+            );
+            setAvailableUsers(filteredUsers);
     
           } catch (err) {
             console.error("Error fetching data:", err);
@@ -44,6 +50,45 @@ export default function Users() {
         fetchUserData();
       }, [navigate]);
 
+    const handleAddToGroup = async (roommateId) => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          navigate("/signin");
+          return;
+        }
+
+        const response = await axios.post("http://localhost:5001/users/addToGroup", {
+          currId: userId,
+          roommateId: roommateId
+        });
+
+        if (response.status === 200) {
+          // Update state to reflect the changes
+          setGroupId(response.data.group_id);
+          
+          // Refresh the user data
+          const updatedResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+          setUserData(updatedResponse.data);
+          
+          // Update the available users list
+          const updatedUsersResponse = await axios.get('http://localhost:5001/users');
+          setAllUsers(updatedUsersResponse.data);
+          
+          // Filter out users who now have a group
+          const filteredUsers = updatedUsersResponse.data.filter(user => 
+            !user.group_id && user.id !== userId
+          );
+          setAvailableUsers(filteredUsers);
+          
+          // Show success message
+          alert("Successfully added user to your group!");
+        }
+      } catch (err) {
+        console.error("Error adding user to group:", err);
+        setError("Failed to add user to your group. Please try again.");
+      }
+    };
 
     const handleSignOut = () => {
         // Clear user data from localStorage
@@ -52,6 +97,32 @@ export default function Users() {
         navigate("/");
     };
 
+    const handleLeaveGroup = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          navigate("/signin");
+          return;
+        }
+
+        const response = await axios.post(`http://localhost:5001/users/leaveGroup/${userId}`);
+
+        if (response.status === 200) {
+          // Update state to reflect the changes
+          setGroupId(null);
+          
+          // Refresh user data
+          const updatedResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+          setUserData(updatedResponse.data);
+          
+          // Show success message
+          alert("Successfully left the group!");
+        }
+      } catch (err) {
+        console.error("Error leaving group:", err);
+        setError("Failed to leave the group. Please try again.");
+      }
+    };
 
     if (loading) {
         return (
@@ -62,6 +133,11 @@ export default function Users() {
         );
     }
 
+    // Get current roommates if in a group
+    const roommates = allUsers.filter(user => 
+      user.group_id === groupId && user.id !== localStorage.getItem("userId")
+    );
+
     return (
         <div style={styles.page}>
             <header style={styles.header}>
@@ -70,9 +146,9 @@ export default function Users() {
                     <span style={styles.logoText}>Housing47</span>
                 </div>
                 <div style={styles.navLinks}>
-                    <button style={styles.navLink}>Home</button>
-                    <button style={styles.navLink}>Browse Housing</button>
-                    <button style={styles.navLink}>My Group</button>
+                    <button style={styles.navLink} onClick={() => navigate('/dashboard')}>Dashboard</button>
+                    <button style={styles.navLink} onClick={() => navigate('/map')}>Browse Housing</button>
+                    <button style={{...styles.navLink, backgroundColor: '#EEF2FF', color: '#4F46E5'}}>My Group</button>
                     <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
                 </div>
             </header>
@@ -84,21 +160,69 @@ export default function Users() {
                     </div>
                 )}
 
-                {availableUsers && (
-                    <div style={styles.dashboardContainer}>
-                        <div style={styles.welcomeSection}>
-                            <h1 style={styles.welcomeHeading}>Find your next roommate!</h1>
+                <div style={styles.dashboardContainer}>
+                    {/* My Group Section */}
+                    <div style={styles.card}>
+                        <h2 style={styles.cardTitle}>My Roommate Group</h2>
+                        <div style={styles.cardContent}>
+                            {groupId ? (
+                                <>
+                                    <p>Group ID: {groupId}</p>
+                                    <p>My Roommates:</p>
+                                    {roommates.length > 0 ? (
+                                        <ul style={styles.roommateList}>
+                                            {roommates.map(roommate => (
+                                                <li key={roommate.id} style={styles.roommateItem}>
+                                                    {roommate.username} - {getClassYearName(roommate.class_year)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p>No roommates yet. Add some below!</p>
+                                    )}
+                                    <button 
+                                        style={{...styles.actionButton, backgroundColor: '#EF4444'}} 
+                                        onClick={handleLeaveGroup}
+                                    >
+                                        Leave Group
+                                    </button>
+                                </>
+                            ) : (
+                                <p>You're not part of any roommate group yet. Start by adding potential roommates below!</p>
+                            )}
                         </div>
-
-                        <div style={styles.infoCards}>
-                            {availableUsers.map((user) => (
-                                <UserCard key={user.id} user={user} getClassYearName={getClassYearName} />
-                            ))}
-                        </div>
-
-
                     </div>
-                )}
+
+                    {/* Find Roommates Section */}
+                    <div style={styles.welcomeSection}>
+                        <h1 style={styles.welcomeHeading}>Find your next roommate!</h1>
+                        <p style={styles.welcomeSubheading}>
+                            Browse through available users and add them to your roommate group
+                        </p>
+                    </div>
+
+                    <div style={styles.infoCards}>
+                        {availableUsers.length > 0 ? (
+                            availableUsers.map((user) => (
+                                <div key={user.id} style={styles.card}>
+                                    <div style={styles.cardContent}>
+                                        <h3 style={styles.userName}>{user.username}</h3>
+                                        <p>Email: {user.email}</p>
+                                        <p>Class Year: {getClassYearName(user.class_year)}</p>
+                                        <button 
+                                            style={styles.actionButton} 
+                                            onClick={() => handleAddToGroup(user.id)}
+                                        >
+                                            Add to My Group
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p style={styles.noUsersMessage}>No available users found. Check back later!</p>
+                        )}
+                    </div>
+                </div>
             </main>
 
             <footer style={styles.footer}>
@@ -111,10 +235,10 @@ export default function Users() {
 // Helper function to convert class year number to name
 function getClassYearName(classYear) {
     const classYearMap = {
-        "1": "Freshman",
-        "2": "Sophomore",
-        "3": "Junior",
-        "4": "Senior"
+        1: "Freshman",
+        2: "Sophomore",
+        3: "Junior",
+        4: "Senior"
     };
 
     return classYearMap[classYear] || classYear;
@@ -188,6 +312,7 @@ const styles = {
     },
     welcomeSection: {
         marginBottom: '1rem',
+        marginTop: '2rem',
     },
     welcomeHeading: {
         fontSize: '1.875rem',
@@ -226,11 +351,14 @@ const styles = {
     roommateList: {
         listStyleType: 'none',
         padding: 0,
-        margin: '0.5rem 0 0 0',
+        margin: '0.5rem 0 1rem 0',
     },
     roommateItem: {
         padding: '0.5rem 0',
         borderBottom: '1px solid #F3F4F6',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     actionButton: {
         backgroundColor: '#4F46E5',
@@ -276,7 +404,19 @@ const styles = {
         animation: 'spin 1s linear infinite',
         marginBottom: '1rem',
     },
-    '@keyframes spin': {
-        to: { transform: 'rotate(360deg)' },
+    userName: {
+        fontSize: '1.25rem',
+        fontWeight: '600',
+        color: '#111827',
+        marginTop: 0,
+        marginBottom: '0.75rem',
     },
+    noUsersMessage: {
+        gridColumn: '1 / -1',
+        textAlign: 'center',
+        padding: '2rem',
+        backgroundColor: 'white',
+        borderRadius: '0.75rem',
+        color: '#6B7280',
+    }
 };
