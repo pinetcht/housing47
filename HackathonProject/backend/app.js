@@ -4,10 +4,8 @@ import express from 'express';
 import cors from 'cors';
 import dormsRouter from "./dorms.js";
 import userRouter from "./users.js";
-// import favoritesRouter from "./favorites.js";
-// import floorsRouter from "./floors.js";
-// import suitesRouter from "./suites.js";
-// import roommatesRouter from "./roommates.js";
+import favoritesRouter from "./favorites.js";
+import suitesRouter from "./suites.js";
 import roomsRouter from "./rooms.js";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./firebase.js";
@@ -83,12 +81,10 @@ app.post("/login", async (req, res) => {
 /* --------------------------------- EXPRESS ROUTES ------------------------------------- */
 
 app.use("/dorms", dormsRouter);
-// app.use("/floors", floorsRouter);
-// app.use("/suites", suitesRouter);
+app.use("/suites", suitesRouter);
 app.use("/rooms", roomsRouter);
 app.use("/users", userRouter);
-// app.use("/roommates", roommatesRouter);
-// app.use("/favorites", favoritesRouter);
+app.use("/favorites", favoritesRouter);
 
 
 /* ---------------------------------------------------------------------------------------- */

@@ -1,11 +1,30 @@
 import express from 'express';
 import { db } from "./firebase.js";
-import { getDorms } from "./dorms.js";
-import { filterRooms } from "./rooms.js";
-import { collection, getDocs, updateDoc, doc, setDoc, addDoc, deleteDoc, getDoc, where, query} from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, addDoc, getDoc, where, query} from "firebase/firestore";
 
 const router = express.Router();
 
+// helper function to get user profile data
+export async function getUserById(userId) {
+    const docRef = doc(db, "users", userId);
+        
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+       return docSnap.data();
+        
+    } else {
+        throw new Error("User not found");
+    }
+
+}
+
+// helper function to check if user already exists
+export async function userExists(email) {
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const querySnap = await getDocs(q);
+
+    return !querySnap.empty;
+}
 
 router.get("/", async (req, res) => {
     try {
@@ -32,6 +51,10 @@ router.post("/create", async (req, res) =>{
         return res.status(400).send('Missing required fields');
     }
 
+    if (userExists(email)) {
+        return res.status(400).send("User already exists!");
+    }
+
     try {
         const userData = {
             class_year: class_year,
@@ -55,19 +78,6 @@ router.post("/create", async (req, res) =>{
     }
 })
 
-// helper function to get user profile data
-export async function getUserById(userId) {
-    const docRef = doc(db, "users", userId);
-        
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-       return docSnap.data();
-        
-    } else {
-        throw new Error("User not found");
-    }
-
-}
 
 // get user profile data
 router.get("/:id", async (req, res) => {

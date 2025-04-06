@@ -1,8 +1,6 @@
 import express from 'express';
 import { db } from "./firebase.js";
-import { getUserById } from "./users.js";
-import { getRooms } from "./rooms.js";
-import { collection, getDocs, updateDoc, doc, setDoc, addDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const router = express.Router();
 
