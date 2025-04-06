@@ -52,16 +52,22 @@ export async function filterRooms(user_id) {
 
     console.log("rooms ", rooms);
 
-    let filteredRooms = [];
-    rooms.forEach((room) => {
-        if(!room.is_taken && room.capacity == numMembers && room.class_year == classYear){
-            filteredRooms.push({
-                id: room.id,
-                ...room
-            })
-        }
+    // let filteredRooms = [];
+    // rooms.forEach((room) => {
+    //     if(!room.is_taken && room.capacity == numMembers && room.class_year == classYear){
+    //         filteredRooms.push({
+    //             id: room.id,
+    //             ...room
+    //         })
+    //     }
 
-    });
+    // });
+
+    const filteredRooms = rooms.filter(room =>
+        !room.is_taken &&
+        room.capacity === numMembers &&
+        room.class_year === classYear
+      );
 
     return filteredRooms;
 
