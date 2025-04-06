@@ -1,7 +1,6 @@
-// Map.jsx
-
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const Map = () => {
   const mapContainer = useRef(null);
@@ -14,6 +13,32 @@ const Map = () => {
       zoom: 16,
     });
 
+    map.on("load", () => {
+      // Change 'dorms-labels' to match your actual label layer ID
+      const dormLayerId = "dorms-labels";
+
+      // Check if layer exists before binding events
+      if (map.getLayer(dormLayerId)) {
+        map.on("click", dormLayerId, (e) => {
+          const dormName = e.features[0].properties.name;
+
+          // Navigate to new route like /dorms/clark-i
+          const formattedName = dormName.toLowerCase().replace(/\s+/g, "-");
+          window.location.href = `/dorms/${encodeURIComponent(formattedName)}`;
+        });
+
+        // Pointer cursor on hover
+        map.on("mouseenter", Others, () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", Others, () => {
+          map.getCanvas().style.cursor = "";
+        });
+      } else {
+        console.warn(`Layer "${Others}" not found. Check your MapTiler Studio layer ID.`);
+      }
+    });
+
     return () => map.remove();
   }, []);
 
@@ -22,13 +47,12 @@ const Map = () => {
       ref={mapContainer}
       style={{
         width: "100%",
-        height: "100vh",
+        height: "100vh", // full screen map
         borderRadius: "12px",
         overflow: "hidden",
       }}
     />
   );
-  
 };
 
 export default Map;

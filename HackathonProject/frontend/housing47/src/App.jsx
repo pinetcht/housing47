@@ -10,6 +10,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/dorms/:dormId" element={<DormDetail />} />
       </Routes>
     </Router>
   );
