@@ -65,7 +65,7 @@ export default function SignIn() {
       console.log("Login successful:", response.data);
       
       // Store user data or token in localStorage/sessionStorage if needed
-      localStorage.setItem('userId', response.data.userId);
+      localStorage.setItem('userId', response.data.user.id);
       
       // Redirect to dashboard after successful login
       navigate("/dashboard");

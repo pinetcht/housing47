@@ -5,27 +5,31 @@ import axios from "axios";
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [groupId, setGroupId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [roommates, setRoommates] = useState([]);
+  let userId = null;
+
 
   useEffect(() => {
     // Get the userId from localStorage
-    const userId = localStorage.getItem("userId");
-    
+    userId = localStorage.getItem("userId");
+
     if (!userId) {
       // No user ID found, redirect to sign in
       navigate("/signin");
       return;
     }
-    
+
     // Fetch user data
     const fetchUserData = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`http://localhost:5001/users/${userId}`);
         setUserData(response.data);
-        
+        setGroupId(response.data.group_id);
+
         // Try to fetch roommates if the user has a group
         if (response.data.group_id) {
           try {
@@ -44,7 +48,7 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-    
+
     fetchUserData();
   }, [navigate]);
 
@@ -54,6 +58,22 @@ export default function Dashboard() {
     // Redirect to home page
     navigate("/");
   };
+
+  const handleLeaveGroup = async () => {
+    userId = localStorage.getItem("userId");
+
+    try {
+      console.log("user id", userId)
+      const response = await axios.post(`http://localhost:5001/users/leaveGroup/${userId}`);
+      console.log("Successfully left group:", response.data);
+
+      const userResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+      setUserData(userResponse.data)
+      setGroupId(userResponse.data.group_id);
+    } catch (error) {
+      console.error("Error leaving group:", error.message);
+    }
+  }
 
   if (loading) {
     return (
@@ -85,7 +105,7 @@ export default function Dashboard() {
             {error}
           </div>
         )}
-        
+
         {userData && (
           <div style={styles.dashboardContainer}>
             <div style={styles.welcomeSection}>
@@ -94,7 +114,7 @@ export default function Dashboard() {
                 Here's your housing dashboard
               </p>
             </div>
-            
+
             <div style={styles.infoCards}>
               <div style={styles.card}>
                 <h2 style={styles.cardTitle}>Your Profile</h2>
@@ -104,32 +124,48 @@ export default function Dashboard() {
                   <p><strong>Housing Status:</strong> {userData.room_id ? "Assigned" : "Not Assigned"}</p>
                 </div>
               </div>
-              
+
               <div style={styles.card}>
                 <h2 style={styles.cardTitle}>Roommate Group</h2>
                 <div style={styles.cardContent}>
-                  {userData.group_id ? (
+                  {groupId ? (
                     <>
-                      <p><strong>Group ID:</strong> {userData.group_id}</p>
+                      <p><strong>Group ID:</strong> {groupId}</p>
                       <p><strong>Roommates:</strong></p>
                       {roommates.length > 0 ? (
-                        <ul style={styles.roommateList}>
-                          {roommates.map(roommate => (
-                            <li key={roommate.id} style={styles.roommateItem}>
-                              {roommate.username} ({getClassYearName(roommate.class_year)})
-                            </li>
-                          ))}
-                        </ul>
+                        <>
+                          <ul style={styles.roommateList}>
+                            {roommates.map(roommate => (
+                              <li key={roommate.id} style={styles.roommateItem}>
+                                {roommate.username} ({getClassYearName(roommate.class_year)})
+                              </li>
+                            ))}
+                          </ul>
+
+                          <button
+                            onClick={handleLeaveGroup}
+                            style={styles.actionButton}>Leave Group</button>
+                        </>
+
                       ) : (
-                        <p>No roommates found</p>
+                        <>
+                          <p>No roommates found</p>
+                        </>
+
                       )}
                     </>
                   ) : (
-                    <p>You are not part of a roommate group yet. Create or join a group to find housing together.</p>
+                    <>
+                      <p>You are not part of a roommate group yet. Create or join a group to find housing together.</p>
+                      <button
+                        onClick={() => navigate("/users")}
+                        style={styles.actionButton}>Find Roommate</button>
+                    </>
+
                   )}
                 </div>
               </div>
-              
+
               <div style={styles.card}>
                 <h2 style={styles.cardTitle}>Housing Assignment</h2>
                 <div style={styles.cardContent}>
@@ -147,7 +183,7 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-      
+
       <footer style={styles.footer}>
         <p>&copy; 2025 Housing47. All rights reserved.</p>
       </footer>
@@ -163,7 +199,7 @@ function getClassYearName(classYear) {
     "3": "Junior",
     "4": "Senior"
   };
-  
+
   return classYearMap[classYear] || classYear;
 }
 

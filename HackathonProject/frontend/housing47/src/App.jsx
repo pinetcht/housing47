@@ -5,6 +5,7 @@ import MapPage from "./pages/MapPage";
 import DormDetail from "./pages/DormDetail";
 import SignIn from "./pages/SignIn"; // your new sign-in page
 import Dashboard from "./pages/Dashboard";
+import Users from "./pages/Users";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/map" element={<MapPage />} />
         <Route path="/dorms/:dormId" element={<DormDetail />} /> {/* ✅ now active */}
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/users" element={<Users />} />
       </Routes>
     </Router>
   );
