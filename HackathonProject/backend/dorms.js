@@ -5,12 +5,12 @@ import { collection, getDocs, updateDoc, doc, setDoc, addDoc, deleteDoc, getDoc 
 const router = express.Router();
 
 
-router.get("/", async (req, res) => {
-    try {
-        let ret = [];
-        const docRef = await getDocs(collection(db, "dorms"));
-       
-
+// helper function to get user profile data
+export async function getDorms() {
+    let ret = [];
+    const docRef = await getDocs(collection(db, "dorms"));
+   
+    if (docRef){
         docRef.forEach((doc) => {
             ret.push({
                 id: doc.id,
@@ -18,7 +18,17 @@ router.get("/", async (req, res) => {
             })
         }) 
 
-        res.status(200).json(ret)
+        return ret;
+    } else {
+        throw new Error("Can't fetch dorms");
+    }
+}
+
+router.get("/", async (req, res) => {
+    try {
+        const dorms = await getDorms();
+
+        res.status(200).json(dorms)
     } catch(e) {
         res.status(400).json({error: `Error fetching dorms data ${e}`})
     }
