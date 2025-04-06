@@ -3,25 +3,33 @@ import { useParams } from "react-router-dom";
 const DormDetail = () => {
   const { dormId } = useParams();
 
-  // Map dorm IDs to image filenames
   const dormImages = {
+    "harwood-court": "/images/harwood-court-1.jpg",
     "clark-i": "/images/clark-i.jpg",
-    "clark-iii": "/images/clark-iii.jpg",
+    "sontag-hall": "/images/sontag-hall.jpg",
     "mudd-blaisdell-hall": "/images/mudd-blaisdell-hall.jpg",
-    "harwood-court": "/ResHall-FloorPlan-Harwood 1.pdf",
-    // Add the rest...
+    // Add all your dorms here
   };
 
   const image = dormImages[dormId];
 
-  if (!image) {
-    return <div>Dorm not found.</div>;
-  }
-
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
-      <h2>{dormId.replace(/-/g, " ").toUpperCase()}</h2>
-      <img src={image} alt={`${dormId} layout`} style={{ maxWidth: "100%", height: "auto" }} />
+      <h1>{dormId.replace(/-/g, " ").toUpperCase()}</h1>
+      {image ? (
+        <img
+          src={image}
+          alt={`${dormId} layout`}
+          style={{
+            maxWidth: "90%",
+            maxHeight: "80vh",
+            borderRadius: "10px",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+          }}
+        />
+      ) : (
+        <p>No layout image found for this dorm.</p>
+      )}
     </div>
   );
 };
