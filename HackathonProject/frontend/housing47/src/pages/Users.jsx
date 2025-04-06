@@ -9,38 +9,41 @@ export default function Users() {
     const [groupId, setGroupId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    let userId = null;
+    const [availableUsers, setAvailableUsers] = useState([]);
 
 
     useEffect(() => {
-        // Get the userId from localStorage
-        userId = localStorage.getItem("userId");
-
+        const userId = localStorage.getItem("userId");
+    
         if (!userId) {
-            // No user ID found, redirect to sign in
-            navigate("/signin");
-            return;
+          navigate("/signin");
+          return;
         }
-
-        // Fetch user data
+    
         const fetchUserData = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(`http://localhost:5001/users/${userId}`);
-                setUserData(response.data);
-                setGroupId(response.data.group_id);
-
-
-            } catch (err) {
-                console.error("Error fetching user data:", err);
-                setError("Failed to load your profile. Please try again.");
-            } finally {
-                setLoading(false);
-            }
+          try {
+            setLoading(true);
+    
+            // Get current user
+            const response = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
+            setUserData(response.data);
+            setGroupId(response.data.group_id);
+    
+            // Get available users
+            const availableResponse = await axios.get(`http://localhost:5001/users/available`);
+            setAvailableUsers(availableResponse.data);
+    
+          } catch (err) {
+            console.error("Error fetching data:", err);
+            setError("Failed to load your profile or available users. Please try again.");
+          } finally {
+            setLoading(false);
+          }
         };
-
+    
         fetchUserData();
-    }, [navigate]);
+      }, [navigate]);
+
 
     const handleSignOut = () => {
         // Clear user data from localStorage
@@ -81,14 +84,14 @@ export default function Users() {
                     </div>
                 )}
 
-                {userData && (
+                {availableUsers && (
                     <div style={styles.dashboardContainer}>
                         <div style={styles.welcomeSection}>
-                            <h1 style={styles.welcomeHeading}>Find your next roommate</h1>
+                            <h1 style={styles.welcomeHeading}>Find your next roommate!</h1>
                         </div>
 
                         <div style={styles.infoCards}>
-                            {users.map((user) => (
+                            {availableUsers.map((user) => (
                                 <UserCard key={user.id} user={user} getClassYearName={getClassYearName} />
                             ))}
                         </div>

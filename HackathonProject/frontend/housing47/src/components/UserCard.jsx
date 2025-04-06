@@ -4,11 +4,10 @@ import React from 'react';
 const UserCard = ({ user, getClassYearName }) => {
   return (
     <div style={styles.card}>
-      <h2 style={styles.cardTitle}>User Profile</h2>
+      <h2 style={styles.cardTitle}>{user.username}</h2>
       <div style={styles.cardContent}>
         <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Class Year:</strong> {getClassYearName(user.class_year)}</p>
-        <p><strong>Housing Status:</strong> {user.room_id ? "Assigned" : "Not Assigned"}</p>
       </div>
     </div>
   );
