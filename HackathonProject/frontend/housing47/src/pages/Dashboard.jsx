@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [roommates, setRoommates] = useState([]);
+  const [roomData, setRoomData] = useState(null);
   let userId = null;
 
 
@@ -29,6 +30,16 @@ export default function Dashboard() {
         const response = await axios.get(`http://localhost:5001/users/${userId}`);
         setUserData(response.data);
         setGroupId(response.data.group_id);
+
+        // Fetch room details if the user has a room assignment
+        if (response.data.room_id) {
+          try {
+            const roomResponse = await axios.get(`http://localhost:5001/rooms/get_room_by_id/${response.data.room_id}`);
+            setRoomData(roomResponse.data);
+          } catch (roomErr) {
+            console.error("Error fetching room data:", roomErr);
+          }
+        }
 
         // Try to fetch roommates if the user has a group
         if (response.data.group_id) {
@@ -92,9 +103,9 @@ export default function Dashboard() {
           <span style={styles.logoText}>Housing47</span>
         </div>
         <div style={styles.navLinks}>
-          <button style={styles.navLink}>Home</button>
-          <button style={styles.navLink}>Browse Housing</button>
-          <button style={styles.navLink}>My Group</button>
+          <button style={styles.navLink} onClick={() => navigate("/dashboard")}>Home</button>
+          <button style={styles.navLink} onClick={() => navigate("/map")}>Browse Housing</button>
+          <button style={styles.navLink} onClick={() => navigate("/group")}>My Group</button>
           <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
         </div>
       </header>
@@ -170,7 +181,18 @@ export default function Dashboard() {
                 <h2 style={styles.cardTitle}>Housing Assignment</h2>
                 <div style={styles.cardContent}>
                   {userData.room_id ? (
-                    <p>Your room assignment: {userData.room_id}</p>
+                    <>
+                      {roomData ? (
+                        <div>
+                          <p><strong>Room:</strong> {roomData.room_number}</p>
+                          <p><strong>Building:</strong> {roomData.building_id}</p>
+                          <p><strong>Capacity:</strong> {roomData.capacity} {roomData.capacity === 1 ? 'person' : 'people'}</p>
+                          {roomData.has_ac && <p><strong>Amenities:</strong> Air Conditioning</p>}
+                        </div>
+                      ) : (
+                        <p>Loading room information...</p>
+                      )}
+                    </>
                   ) : (
                     <p>You don't have a housing assignment yet.</p>
                   )}

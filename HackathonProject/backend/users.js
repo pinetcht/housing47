@@ -45,37 +45,39 @@ router.get("/", async (req, res) => {
 })
 
 router.post("/create", async (req, res) =>{
-    const { class_year, email, password, username } = req.body;
+  const { class_year, email, password, username } = req.body;
 
-    if ( !class_year || !email || !password || !username) {
-        return res.status(400).send('Missing required fields');
-    }
+  if (!class_year || !email || !password || !username) {
+      return res.status(400).send('Missing required fields');
+  }
 
-    if (userExists(email)) {
-        return res.status(400).send("User already exists!");
-    }
+  try {
+      // Add the await keyword here
+      const exists = await userExists(email);
+      if (exists) {
+          return res.status(400).send("User already exists!");
+      }
 
-    try {
-        const userData = {
-            class_year: class_year,
-            group_id: null,
-            room_id: null,
-            email: email,
-            password: password,
-            username: username
-        };
+      const userData = {
+          class_year: class_year,
+          group_id: null,
+          room_id: null,
+          email: email,
+          password: password,
+          username: username
+      };
 
-        const userCollection = collection(db, "users");
-        const docRef = await addDoc(userCollection, userData);
+      const userCollection = collection(db, "users");
+      const docRef = await addDoc(userCollection, userData);
 
-        res.status(200).json({
-            message: 'User profile created successfully',
-            userId: docRef.id
-        });
-    } catch (error) {
-        console.error("Error creating user profile:", error);
-        res.status(500).send('Internal server error');
-    }
+      res.status(200).json({
+          message: 'User profile created successfully',
+          userId: docRef.id
+      });
+  } catch (error) {
+      console.error("Error creating user profile:", error);
+      res.status(500).send('Internal server error');
+  }
 })
 
 

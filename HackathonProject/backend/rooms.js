@@ -7,6 +7,25 @@ const router = express.Router();
 
 
 // helper function to get all dorms
+// Helper function to get a room by its ID
+export async function getRoomById(roomId) {
+    try {
+        const roomDoc = await getDoc(doc(db, "rooms", roomId));
+        
+        if (roomDoc.exists()) {
+            return {
+                id: roomDoc.id,
+                ...roomDoc.data()
+            };
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting room by ID:", error);
+        throw error;
+    }
+}
+
 export async function getRooms() {
     let ret = [];
     const docRef = await getDocs(collection(db, "rooms"));
@@ -101,6 +120,7 @@ export async function getRoomByNum(roomNumber) {
     return rooms[0];
 }
 
+
 router.get("/get_room/:roomNumber", async (req, res) => {
     try {
         const room = await getRoomByNum(req.params.roomNumber);
@@ -109,6 +129,26 @@ router.get("/get_room/:roomNumber", async (req, res) => {
         res.status(400).json({ error: `Error fetching room data ${e}` })
     }
 })
+
+router.get("/get_room_by_id/:roomId", async (req, res) => {
+    try {
+        const roomId = req.params.roomId;
+        const roomDoc = await getDoc(doc(db, "rooms", roomId));
+        
+        if (roomDoc.exists()) {
+            const roomData = {
+                id: roomDoc.id,
+                ...roomDoc.data()
+            };
+            res.status(200).json(roomData);
+        } else {
+            res.status(404).json({ error: "Room not found" });
+        }
+    } catch (error) {
+        console.error("Error getting room by ID:", error);
+        res.status(400).json({ error: `Error fetching room data: ${error.message}` });
+    }
+});
 
 router.post("/selectRoom", async (req, res) => {
     const { room_id, user_id } = req.body;
@@ -124,15 +164,34 @@ router.post("/selectRoom", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // If user doesn't have a group, create a personal group for them
+        let group_id = user.group_id;
+        if (!group_id) {
+            // Create a new personal group
+            const newGroupRef = doc(collection(db, "groups"));
+            await setDoc(newGroupRef, {
+                name: `${user.name}'s Room`,
+                created_at: new Date(),
+                members: [user_id]
+            });
+            
+            group_id = newGroupRef.id;
+            
+            // Update the user with the new group_id
+            await setDoc(doc(db, "users", user_id), { group_id }, { merge: true });
+        }
 
-        const assigned_group_id = user.group_id;
+        // Now we have a valid group_id to use
         await Promise.all([
             // Update current room with group_id
-            setDoc(doc(db, "rooms", room_id), { assigned_group_id, is_taken: true  }, { merge: true }),
+            setDoc(doc(db, "rooms", room_id), { 
+                assigned_group_id: group_id, 
+                is_taken: true 
+            }, { merge: true }),
         ]);
 
         const userGroup = await getRoommatesByUserId(user_id);
-
+        
         await Promise.all(
             userGroup.map((user) =>
                 setDoc(doc(db, "users", user.id), { room_id: room_id }, { merge: true })
@@ -140,12 +199,12 @@ router.post("/selectRoom", async (req, res) => {
         );
 
         res.status(200).json("Successfully selected rooms");
-    
         
     } catch (e) {
-        res.status(400).json({ error: `Error selecting room ${e}` })
+        console.error("Error in selectRoom:", e);
+        res.status(400).json({ error: `Error selecting room: ${e.message}` });
     }
-})
+});
 
 router.post("/unselectRoom", async (req, res) => {
     const { room_id, user_id } = req.body;
