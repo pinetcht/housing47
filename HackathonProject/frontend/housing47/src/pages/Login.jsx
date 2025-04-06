@@ -73,8 +73,16 @@ export default function Login() {
     setSubmitError("");
     
     try {
-      // Send POST request to your server
-      const response = await axios.post('http://localhost:5001/users/create', formData);
+      // Create a new object with class_year converted to integer
+      const formDataWithIntClassYear = {
+        ...formData,
+        class_year: parseInt(formData.class_year, 10) // Convert to integer
+      };
+      
+      console.log("Sending data to server:", formDataWithIntClassYear); // Log what we're sending
+      
+      // Send POST request to your server with the converted data
+      const response = await axios.post('http://localhost:5001/users/create', formDataWithIntClassYear);
       
       console.log("Registration successful:", response.data);
       
@@ -84,7 +92,22 @@ export default function Login() {
       // Redirect to dashboard after successful registration
       navigate("/dashboard");
     } catch (error) {
-      // Error handling code
+      console.error("Registration failed:", error);
+      
+      if (error.response) {
+        // The server responded with an error status
+        console.error("Server error data:", error.response.data);
+        console.error("Server error status:", error.response.status);
+        setSubmitError(error.response.data.message || "Registration failed. Please try again.");
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("No response received");
+        setSubmitError("Server not responding. Please try again later.");
+      } else {
+        // Something happened in setting up the request
+        console.error("Request setup error:", error.message);
+        setSubmitError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
