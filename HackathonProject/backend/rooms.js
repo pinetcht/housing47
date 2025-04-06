@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from "./firebase.js";
 import { getRoommatesByUserId, getUserById } from "./users.js";
-import { collection, getDocs, getDoc, setDoc, doc } from "firebase/firestore";
+import { collection, getDocs, getDoc, setDoc, doc, query, where } from "firebase/firestore";
 
 const router = express.Router();
 
@@ -71,22 +71,39 @@ router.get("/filtered/:id", async (req, res) => {
     }
 })
 
+
+
 // helper function to get all dorms
-export async function getRoomById(roomId) {
-    const docRef = doc(db, "rooms", roomId);
-        
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-       return docSnap.data();
-        
-    } else {
-        throw new Error("Room not found");
+export async function getRoomByNum(roomNumber) {
+    const q = query(collection(db, "rooms"), where("room_number", "==", roomNumber));
+    const querySnap = await getDocs(q);
+  
+    const rooms = [];
+    querySnap.forEach((doc) => {
+        rooms.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    // more than one room with same room number
+    if (rooms.length > 1) {
+        return res.status(409).json({
+            error: "Multiple rooms found with this room number. Please contact support.",
+        });
     }
+
+    // Handle no match
+    if (rooms.length === 0) {
+        return res.status(404).json({ error: "Room not found." });
+    } 
+
+    return rooms[0];
 }
 
-router.get("/get_room/:id", async (req, res) => {
+router.get("/get_room/:roomNumber", async (req, res) => {
     try {
-        const room = await getRoomById(req.params.id);
+        const room = await getRoomByNum(req.params.roomNumber);
         res.status(200).json(room)
     } catch (e) {
         res.status(400).json({ error: `Error fetching room data ${e}` })
