@@ -60,7 +60,7 @@ export default function SignIn() {
     
     try {
       // Send POST request to your server
-      const response = await axios.post('http://localhost:5001/users/login', formData);
+      const response = await axios.post('http://localhost:5001/login', formData);
       
       console.log("Login successful:", response.data);
       
