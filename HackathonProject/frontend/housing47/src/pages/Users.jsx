@@ -2,53 +2,48 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import UserCard from '../components/UserCard';
+import { toast } from 'react-toastify';
+
 
 export default function Users() {
     const navigate = useNavigate();
-    const [userData, setUserData] = useState(null);
-    const [groupId, setGroupId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [groupId, setGroupId] = useState(null);
+    const [userData, setUserData] = useState(null);
     const [error, setError] = useState("");
     const [allUsers, setAllUsers] = useState([]);
     const [availableUsers, setAvailableUsers] = useState([]);
+    let userId;
+
 
     useEffect(() => {
-        const userId = localStorage.getItem("userId");
-    
+        userId = localStorage.getItem("userId");
+
         if (!userId) {
-          navigate("/signin");
-          return;
+            navigate("/signin");
+            return;
         }
-    
+
         const fetchUserData = async () => {
-          try {
-            setLoading(true);
-    
-            // Get current user - using the correct API endpoint from the router
-            const response = await axios.get(`http://localhost:5001/users/${userId}`);
-            setUserData(response.data);
-            setGroupId(response.data.group_id);
-    
-            // Get all users - this is what your API actually supports
-            const usersResponse = await axios.get('http://localhost:5001/users');
-            setAllUsers(usersResponse.data);
-            
-            // Filter out users who already have a group and the current user
-            const filteredUsers = usersResponse.data.filter(user => 
-              !user.group_id && user.id !== userId
-            );
-            setAvailableUsers(filteredUsers);
-    
-          } catch (err) {
-            console.error("Error fetching data:", err);
-            setError("Failed to load your profile or available users. Please try again.");
-          } finally {
-            setLoading(false);
-          }
+            try {
+                setLoading(true);
+
+                // Get current user
+                const response = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
+                // Get available users
+                const availableResponse = await axios.get(`http://localhost:5001/users/available/${userId}`);
+                setAvailableUsers(availableResponse.data);
+
+            } catch (err) {
+                console.error("Error fetching data:", err);
+                setError("Failed to load your profile or available users. Please try again.");
+            } finally {
+                setLoading(false);
+            }
         };
-    
+
         fetchUserData();
-      }, [navigate]);
+    }, [navigate]);
 
     const handleAddToGroup = async (roommateId) => {
       try {
@@ -68,7 +63,7 @@ export default function Users() {
           setGroupId(response.data.group_id);
           
           // Refresh the user data
-          const updatedResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+          const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
           setUserData(updatedResponse.data);
           
           // Update the available users list
@@ -82,7 +77,7 @@ export default function Users() {
           setAvailableUsers(filteredUsers);
           
           // Show success message
-          alert("Successfully added user to your group!");
+          toast.success("Successfully added to group!");
         }
       } catch (err) {
         console.error("Error adding user to group:", err);
@@ -112,17 +107,19 @@ export default function Users() {
           setGroupId(null);
           
           // Refresh user data
-          const updatedResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+          const updatedResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
           setUserData(updatedResponse.data);
           
           // Show success message
-          alert("Successfully left the group!");
+          toast("Successfully left the group!");
         }
       } catch (err) {
         console.error("Error leaving group:", err);
         setError("Failed to leave the group. Please try again.");
       }
     };
+
+
 
     if (loading) {
         return (
@@ -148,7 +145,7 @@ export default function Users() {
                 <div style={styles.navLinks}>
                     <button style={styles.navLink} onClick={() => navigate('/dashboard')}>Dashboard</button>
                     <button style={styles.navLink} onClick={() => navigate('/map')}>Browse Housing</button>
-                    <button style={{...styles.navLink, backgroundColor: '#EEF2FF', color: '#4F46E5'}}>My Group</button>
+                    <button style={styles.navLink} onClick={() => navigate('/users')}>Find Roommates</button>
                     <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
                 </div>
             </header>

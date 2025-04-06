@@ -151,7 +151,7 @@ const DormDetail = () => {
         setUserId(storedUserId);
         
         // Fetch user data to get class year and group info
-        const userResponse = await axios.get(`http://localhost:5001/users/${storedUserId}`);
+        const userResponse = await axios.get(`http://localhost:5001/users/get_user/${storedUserId}`);
         const userData = userResponse.data;
         setUserClassYear(typeof userData.class_year === 'string' ? 
             parseInt(userData.class_year, 10) : 
@@ -400,8 +400,7 @@ const DormDetail = () => {
       }
       
       // Check if the user already has a room assigned
-      console.log("Fetching user data...");
-      const userResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+      const userResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
       const userData = userResponse.data;
       console.log("User data received:", userData);
       

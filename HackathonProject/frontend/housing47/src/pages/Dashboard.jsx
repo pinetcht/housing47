@@ -27,7 +27,7 @@ export default function Dashboard() {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5001/users/${userId}`);
+        const response = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
         setUserData(response.data);
         setGroupId(response.data.group_id);
 
@@ -78,7 +78,7 @@ export default function Dashboard() {
       const response = await axios.post(`http://localhost:5001/users/leaveGroup/${userId}`);
       console.log("Successfully left group:", response.data);
 
-      const userResponse = await axios.get(`http://localhost:5001/users/${userId}`);
+      const userResponse = await axios.get(`http://localhost:5001/users/get_user/${userId}`);
       setUserData(userResponse.data)
       setGroupId(userResponse.data.group_id);
     } catch (error) {
@@ -103,9 +103,9 @@ export default function Dashboard() {
           <span style={styles.logoText}>Housing47</span>
         </div>
         <div style={styles.navLinks}>
-          <button style={styles.navLink} onClick={() => navigate("/dashboard")}>Home</button>
-          <button style={styles.navLink} onClick={() => navigate("/map")}>Browse Housing</button>
-          <button style={styles.navLink} onClick={() => navigate("/group")}>My Group</button>
+          <button onClick={() => navigate("/dashboard")} style={styles.navLink}>Home</button>
+          <button onClick={() => navigate("/map")} style={styles.navLink}>Browse Housing</button>
+          <button onClick={() => navigate("/users")} style={styles.navLink}>Find Roommates</button>
           <button onClick={handleSignOut} style={styles.signOutButton}>Sign Out</button>
         </div>
       </header>

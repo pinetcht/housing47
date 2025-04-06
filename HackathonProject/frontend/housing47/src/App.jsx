@@ -6,6 +6,8 @@ import DormDetail from "./pages/DormDetail";
 import SignIn from "./pages/SignIn"; // your new sign-in page
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import About from "./pages/About";
 
 export default function App() {
@@ -21,6 +23,8 @@ export default function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/about" element={<About />} />
       </Routes>
+
+      <ToastContainer position="top-right" autoClose={3000} />
     </Router>
   );
 }
