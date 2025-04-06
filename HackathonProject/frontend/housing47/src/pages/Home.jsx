@@ -9,6 +9,10 @@ export default function Home() {
     navigate("/signin");
   };
 
+  const handleAboutClick = () => {
+    navigate("/about");
+  };
+
   return (
     <div style={styles.page}>
       {/* Navigation */}
@@ -18,7 +22,12 @@ export default function Home() {
           <span style={styles.logoText}>Housing47</span>
         </div>
         <div style={styles.navLinks}>
-          <button style={styles.navLink}>About</button>
+          <button 
+            onClick={handleAboutClick}
+            style={styles.navLink}
+          >
+            About
+          </button>
           <button style={styles.navLink}>FAQ</button>
           <button 
             onClick={handleLoginClick}
@@ -61,7 +70,7 @@ export default function Home() {
               <div style={styles.featureItem}>
                 <div style={styles.featureIcon}>✓</div>
                 <div>
-                  <h3 style={styles.featureTitle}>Avaliable Rooms</h3>
+                  <h3 style={styles.featureTitle}>Available Rooms</h3>
                   <p style={styles.featureDescription}>See which rooms speak out to you</p>
                 </div>
               </div>
